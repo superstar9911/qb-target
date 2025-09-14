@@ -1,19 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const config = {
-        StandardEyeIcon: "fas fa-eye",
-        StandardColor: "var(--md-on-surface, white)",
-        SuccessColor: "var(--md-success, #386a20)",
-    };
-
     const targetEye = document.getElementById("target-eye");
     const targetLabel = document.getElementById("target-label");
-    const TargetEyeStyleObject = targetEye.style;
 
     function OpenTarget() {
         targetLabel.textContent = "";
         targetEye.style.display = "block";
-        targetEye.className = config.StandardEyeIcon;
-        TargetEyeStyleObject.color = config.StandardColor;
+        targetEye.classList.remove("target-success", "crosshair");
     }
 
     function CloseTarget() {
@@ -26,12 +18,19 @@ document.addEventListener("DOMContentLoaded", function () {
             index = Number(index) + 1;
             const targetOption = document.createElement("div");
             targetOption.id = `target-option-${index}`;
+
+            // Add label text
             const targetIcon = document.createElement("span");
             targetIcon.id = `target-icon-${index}`;
-            const icon = document.createElement("i");
-            icon.className = itemData.icon;
-            targetIcon.appendChild(icon);
-            targetIcon.appendChild(document.createTextNode(" "));
+
+            // Optional: keep icon if provided in itemData
+            if (itemData.icon) {
+                const icon = document.createElement("i");
+                icon.className = itemData.icon;
+                targetIcon.appendChild(icon);
+                targetIcon.appendChild(document.createTextNode(" "));
+            }
+
             targetOption.appendChild(targetIcon);
             targetOption.appendChild(document.createTextNode(itemData.label));
             targetLabel.appendChild(targetOption);
@@ -39,11 +38,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function FoundTarget(item) {
-        if (item.data) {
-            targetEye.className = item.data;
+        // Toggle crosshair if specified
+        if (item.useCrosshair) {
+            targetEye.classList.add("crosshair");
+        } else {
+            targetEye.classList.remove("crosshair");
         }
-        TargetEyeStyleObject.color = config.SuccessColor;
-        targetEye.classList.add("target-success");
+
+        // Add success class if desired
+        if (item.isSuccess) {
+            targetEye.classList.add("target-success");
+        } else {
+            targetEye.classList.remove("target-success");
+        }
+
         targetLabel.textContent = "";
         for (let [index, itemData] of Object.entries(item.options)) {
             createTargetOption(index, itemData);
@@ -59,9 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function LeftTarget() {
         targetLabel.textContent = "";
-        TargetEyeStyleObject.color = config.StandardColor;
-        targetEye.className = config.StandardEyeIcon;
-        targetEye.classList.remove("target-success");
+        targetEye.classList.remove("target-success", "crosshair");
     }
 
     function handleMouseDown(event) {
@@ -77,6 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 targetLabel.textContent = "";
             }
         }
+
         if (event.button === 2) {
             LeftTarget();
             fetch(`https://${GetParentResourceName()}/leftTarget`, {
@@ -98,6 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // Handle events from client/server
     window.addEventListener("message", function (event) {
         switch (event.data.response) {
             case "openTarget":
